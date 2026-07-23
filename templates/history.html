@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Chat History</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>📜 Chat History</h1>
+
+<input
+type="text"
+id="searchInput"
+placeholder="Search chats..."
+onkeyup="searchChats()">
+
+<br><br>
+
+{% if chats %}
+
+{% for chat in chats %}
+
+<div class="history-card">
+
+<h3>👤 User</h3>
+
+<p>{{ chat[1] }}</p>
+
+<h3>🤖 Bot</h3>
+
+<p>{{ chat[2] }}</p>
+
+<p>
+
+<b>Emotion:</b> {{ chat[3] }}
+
+|
+
+<b>Risk:</b> {{ chat[4] }}
+
+</p>
+
+<p>
+
+<b>Time:</b>
+
+{{ chat[5] }}
+
+</p>
+
+<a href="/delete/{{ chat[0] }}">
+
+<button class="delete-btn">
+
+Delete
+
+</button>
+
+</a>
+
+</div>
+
+{% endfor %}
+
+{% else %}
+
+<h2>No Chat History Found.</h2>
+
+{% endif %}
+
+<br>
+
+<a href="/">
+
+<button>
+
+⬅ Back to Chat
+
+</button>
+
+</a>
+
+<a href="/clear">
+
+<button class="delete-btn">
+
+🗑 Clear History
+
+</button>
+
+</a>
+
+</div>
+
+<script>
+
+function searchChats(){
+
+let input=document.getElementById("searchInput");
+
+let filter=input.value.toLowerCase();
+
+let cards=document.getElementsByClassName("history-card");
+
+for(let i=0;i<cards.length;i++){
+
+let txt=cards[i].innerText.toLowerCase();
+
+if(txt.indexOf(filter)>-1){
+
+cards[i].style.display="block";
+
+}
+
+else{
+
+cards[i].style.display="none";
+
+}
+
+}
+
+}
+
+</script>
+
+</body>
+
+</html>

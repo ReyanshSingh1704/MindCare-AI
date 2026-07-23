@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>MindCare Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>📊 MindCare Analytics Dashboard</h1>
+
+    <!-- ================= SUMMARY ================= -->
+
+    <div class="stats-grid">
+
+        <div class="stat-card">
+            <h3>Total Chats</h3>
+            <h1>{{ total_messages }}</h1>
+        </div>
+
+        <div class="stat-card">
+            <h3>😊 Happy</h3>
+            <h1>{{ happy_count }}</h1>
+        </div>
+
+        <div class="stat-card">
+            <h3>😐 Neutral</h3>
+            <h1>{{ neutral_count }}</h1>
+        </div>
+
+        <div class="stat-card">
+            <h3>😔 Sad</h3>
+            <h1>{{ sad_count }}</h1>
+        </div>
+
+    </div>
+
+    <br>
+
+    <!-- ================= RISK ================= -->
+
+    <div class="stats-grid">
+
+        <div class="stat-card">
+            <h3>🟢 Low</h3>
+            <h1>{{ low_count }}</h1>
+        </div>
+
+        <div class="stat-card">
+            <h3>🟡 Moderate</h3>
+            <h1>{{ moderate_count }}</h1>
+        </div>
+
+        <div class="stat-card">
+            <h3>🟠 High</h3>
+            <h1>{{ high_count }}</h1>
+        </div>
+
+        <div class="stat-card">
+            <h3>🔴 Critical</h3>
+            <h1>{{ critical_count }}</h1>
+        </div>
+
+    </div>
+
+    <hr>
+
+    <!-- ================= CHARTS ================= -->
+
+    <div class="card">
+
+        <h2>📈 Emotion Distribution</h2>
+
+        {% if total_messages > 0 %}
+
+            <img class="chart"
+                 src="{{ url_for('static', filename='charts/emotion_chart.png') }}"
+                 alt="Emotion Chart">
+
+        {% else %}
+
+            <p>No data available.</p>
+
+        {% endif %}
+
+    </div>
+
+    <br>
+
+    <div class="card">
+
+        <h2>🥧 Risk Distribution</h2>
+
+        {% if total_messages > 0 %}
+
+            <img class="chart"
+                 src="{{ url_for('static', filename='charts/risk_chart.png') }}"
+                 alt="Risk Chart">
+
+        {% else %}
+
+            <p>No data available.</p>
+
+        {% endif %}
+
+    </div>
+
+    <br>
+
+    <!-- ================= TABLE ================= -->
+
+    <div class="card">
+
+        <h2>📋 Statistics</h2>
+
+        <table>
+
+            <tr>
+                <th>Emotion</th>
+                <th>Messages</th>
+            </tr>
+
+            {% for emotion, count in emotion_counts.items() %}
+
+            <tr>
+
+                <td>{{ emotion }}</td>
+
+                <td>{{ count }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+        <br>
+
+        <table>
+
+            <tr>
+                <th>Risk</th>
+                <th>Messages</th>
+            </tr>
+
+            {% for risk, count in risk_counts.items() %}
+
+            <tr>
+
+                <td>{{ risk }}</td>
+
+                <td>{{ count }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+    <br>
+
+    <!-- ================= BUTTONS ================= -->
+
+    <div style="text-align:center;">
+
+        <a href="/">
+
+            <button>💬 Back to Chat</button>
+
+        </a>
+
+        &nbsp;&nbsp;
+
+        <a href="/history">
+
+            <button>📜 Chat History</button>
+
+        </a>
+
+        &nbsp;&nbsp;
+
+        <a href="/clear"
+           onclick="return confirm('Are you sure you want to delete all chat history?');">
+
+            <button>🗑 Clear History</button>
+
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
