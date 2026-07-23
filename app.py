@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect
+
 import os
 import sqlite3
 import pandas as pd
@@ -6,11 +7,14 @@ from textblob import TextBlob
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from flask import session
+import uuid
 # --------------------------------------------------
 # Flask App
 app = Flask(__name__)
+app.secret_key = "mindcare_ai_secret_key_2026"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE = os.path.join(BASE_DIR, "database.db")
+DATABASE = os.path.join(BASE_DIR, "mindcare_v3.db")
 # --------------------------------------------------
 # DATABASE
 def get_connection():
@@ -26,13 +30,14 @@ def init_db():
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS chats(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            message TEXT NOT NULL,
-            response TEXT NOT NULL,
-            emotion TEXT,
-            risk TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    message TEXT NOT NULL,
+    response TEXT NOT NULL,
+    emotion TEXT,
+    risk TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
     """)
     c.execute("""
 CREATE TABLE IF NOT EXISTS feedbacks(
@@ -109,7 +114,7 @@ def risk_level(text):
         "suicide","kill myself","end my life","want to die","i want to die","self harm","don't want to live","i wanna die"
     }
     high_words = {
-        "depressed", "hopeless","worthless","panic","anxiety","crying", "can't sleep","cannot sleep""nobody understands me","nobody loves me","everyone hates me","i hate myself","i am worthless","i feel worthless","i am useless","i feel useless","i have no friends","i am alone", "i'm alone","i feel alone","nobody understands me","nobody loves me","life is hard","i feel hopeless","i am hopeless","i'm hopeless","i feel anxious","i am anxious","i'm anxious","i feel stressed","i am stressed","i'm stressed"
+        "depressed", "hopeless","worthless","panic","anxiety","crying", "can't sleep","cannot sleep""nobody understands me","nobody loves me","everyone hates me","i hate myself","i am worthless","i feel worthless","i am useless","i feel useless","i have no friends","i am alone", "i'm alone","i feel alone","nobody understands me","life is hard","i feel hopeless","i am hopeless","i'm hopeless","i feel anxious","i am anxious","i'm anxious","i feel stressed","i am stressed","i'm stressed"
 }
     moderate_words = {
         "sad","stress","stressed","lonely","alone","tired","broken","upset","worried", "overthinking","not feeling well","not feeling good","feeling low","feeling down","i failed","exam stress","work stress","bad relationship"
@@ -172,6 +177,10 @@ def generate_response(emotion, risk):
 # HOME PAGE
 @app.route("/")
 def home():
+
+    if "user_id" not in session:
+        session["user_id"] = str(uuid.uuid4())
+
     return render_template("index.html")
 # --------------------------------------------------
 # CHAT API
@@ -192,9 +201,10 @@ def chat():
     c = conn.cursor()
     c.execute("""
         INSERT INTO chats
-        (message, response, emotion, risk)
-        VALUES (?, ?, ?, ?)
+        (user_id,message, response, emotion, risk)
+        VALUES (?, ?, ?, ?, ?)
     """, (
+        session["user_id"],
         message,
         bot_response,
         emotion,
@@ -211,8 +221,13 @@ def chat():
 # CHAT HISTORY
 @app.route("/history")
 def history():
+
+    if "user_id" not in session:
+        return redirect("/")
+
     conn = get_connection()
     c = conn.cursor()
+
     c.execute("""
         SELECT
             id,
@@ -222,10 +237,14 @@ def history():
             risk,
             created_at
         FROM chats
+        WHERE user_id = ?
         ORDER BY id DESC
-    """)
+    """, (session["user_id"],))
+
     chats = c.fetchall()
+
     conn.close()
+
     return render_template(
         "history.html",
         chats=chats
@@ -245,71 +264,98 @@ def delete_chat(id):
     return redirect("/history")
 # --------------------------------------------------
 # DASHBOARD
+# DASHBOARD
 @app.route("/dashboard")
 def dashboard():
+
+    if "user_id" not in session:
+        return redirect("/")
+
     conn = get_connection()
+
     df = pd.read_sql_query(
-        "SELECT * FROM chats",
-        conn
+        "SELECT * FROM chats WHERE user_id=?",
+        conn,
+        params=(session["user_id"],)
     )
+
     conn.close()
+
     total_messages = len(df)
+
     emotion_counts = {}
     risk_counts = {}
+
     if total_messages > 0:
+
         emotion_counts = (
             df["emotion"]
             .value_counts()
             .to_dict()
         )
+
         risk_counts = (
             df["risk"]
             .value_counts()
             .to_dict()
         )
-        # Create Charts Folder
+
         os.makedirs("static/charts", exist_ok=True)
+
         # Emotion Chart
         plt.figure(figsize=(6,4))
+
         plt.bar(
             emotion_counts.keys(),
             emotion_counts.values(),
             color="#6366F1"
         )
+
         plt.title("Emotion Distribution")
         plt.xlabel("Emotion")
         plt.ylabel("Messages")
+
         plt.tight_layout()
+
         plt.savefig(
             "static/charts/emotion_chart.png",
             dpi=150,
             bbox_inches="tight"
         )
+
         plt.close()
+
         # Risk Chart
         plt.figure(figsize=(5,5))
+
         plt.pie(
             risk_counts.values(),
             labels=risk_counts.keys(),
             autopct="%1.1f%%",
             startangle=90
         )
+
         plt.title("Risk Distribution")
+
         plt.tight_layout()
+
         plt.savefig(
             "static/charts/risk_chart.png",
             dpi=150,
             bbox_inches="tight"
         )
+
         plt.close()
-    # Dashboard Summary
+
     happy_count = emotion_counts.get("Happy", 0)
     sad_count = emotion_counts.get("Sad", 0)
     neutral_count = emotion_counts.get("Neutral", 0)
+
     low_count = risk_counts.get("Low", 0)
     moderate_count = risk_counts.get("Moderate", 0)
     high_count = risk_counts.get("High", 0)
     critical_count = risk_counts.get("Critical", 0)
+
     return render_template(
         "dashboard.html",
         total_messages=total_messages,
@@ -387,11 +433,21 @@ def all_feedbacks():
 # CLEAR ALL CHAT HISTORY
 @app.route("/clear")
 def clear_history():
+
+    if "user_id" not in session:
+        return redirect("/")
+
     conn = get_connection()
     c = conn.cursor()
-    c.execute("DELETE FROM chats")
+
+    c.execute(
+        "DELETE FROM chats WHERE user_id=?",
+        (session["user_id"],)
+    )
+
     conn.commit()
     conn.close()
+
     return redirect("/history")
 # MAIN
 import os
