@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect
-import sqlite3
 import os
+import sqlite3
 import pandas as pd
 from textblob import TextBlob
 import matplotlib
@@ -9,15 +9,16 @@ import matplotlib.pyplot as plt
 # --------------------------------------------------
 # Flask App
 app = Flask(__name__)
-DATABASE = "database.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE = os.path.join(BASE_DIR, "database.db")
 # --------------------------------------------------
 # DATABASE
 def get_connection():
-    """
-    Returns SQLite connection.
-    """
     return sqlite3.connect(DATABASE)
+
 def init_db():
+    print("Initializing database...")
+    conn = get_connection()
     """
     Create required tables if they don't exist.
     """
@@ -45,6 +46,7 @@ CREATE TABLE IF NOT EXISTS feedbacks(
     conn.commit()
 
     conn.close()
+    print("Database initialized successfully.")
 init_db()
 
 GREETINGS = {
