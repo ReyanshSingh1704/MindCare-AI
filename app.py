@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify, redirect
-
 import os
 import sqlite3
 import pandas as pd
@@ -9,6 +8,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from flask import session
 import uuid
+from datetime import datetime
+from zoneinfo import ZoneInfo
 # --------------------------------------------------
 # Flask App
 app = Flask(__name__)
@@ -148,7 +149,7 @@ def generate_response(emotion, risk):
     )
     if risk == "Critical":
         return (
-            "I'm really concerned about what you've shared. ❤️\n\n"
+            "I'm really concerned about what you've shared.\n\n"
             "Please reach out to a trusted family member, friend, "
             "or a mental health professional as soon as possible. "
             "You don't have to go through this alone."
@@ -201,14 +202,15 @@ def chat():
     c = conn.cursor()
     c.execute("""
         INSERT INTO chats
-        (user_id,message, response, emotion, risk)
-        VALUES (?, ?, ?, ?, ?)
+        (user_id,message, response, emotion, risk, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
     """, (
         session["user_id"],
         message,
         bot_response,
         emotion,
-        risk
+        risk,
+        datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
     ))
     conn.commit()
     conn.close()
@@ -375,47 +377,34 @@ def dashboard():
 def about():
     return render_template("about.html")
 # --------------------------------------------------
-# FEEDBACK PAGE
-@app.route("/feedback")
-def feedback():
-    return render_template(
-        "feedback.html",
-        success=False
-    )
-    # --------------------------------------------------
-# SUBMIT FEEDBACK
-@app.route("/submit_feedback", methods=["POST"])
-def submit_feedback():
-    name = request.form["name"]
-    rating = request.form["rating"]
-    feedback = request.form["feedback"]
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("""
-        INSERT INTO feedbacks
-        (name, rating, feedback)
-        VALUES (?, ?, ?)
-    """,
-    (
-        name,
-        rating,
-        feedback
-    ))
-    conn.commit()
-    conn.close()
-    return render_template(
-        "feedback.html",
-        success=True
-    )
 # --------------------------------------------------
-# VIEW ALL FEEDBACKS
-@app.route("/all_feedbacks")
-def all_feedbacks():
+# FEEDBACK PAGE + SUBMIT + VIEW ALL FEEDBACKS
+@app.route("/feedback", methods=["GET", "POST"])
+def feedback():
+
     conn = get_connection()
     c = conn.cursor()
+
+    if request.method == "POST":
+
+        name = request.form["name"]
+        rating = request.form["rating"]
+        feedback_text = request.form["feedback"]
+
+        c.execute("""
+            INSERT INTO feedbacks
+            (name, rating, feedback)
+            VALUES (?, ?, ?)
+        """, (
+            name,
+            rating,
+            feedback_text
+        ))
+
+        conn.commit()
+
     c.execute("""
         SELECT
-            id,
             name,
             rating,
             feedback,
@@ -423,12 +412,17 @@ def all_feedbacks():
         FROM feedbacks
         ORDER BY id DESC
     """)
+
     feedbacks = c.fetchall()
+
     conn.close()
+
     return render_template(
-        "all_feedbacks.html",
+        "feedback.html",
+        success=(request.method == "POST"),
         feedbacks=feedbacks
     )
+# --------------------------------------------------
 # --------------------------------------------------
 # CLEAR ALL CHAT HISTORY
 @app.route("/clear")
@@ -450,8 +444,6 @@ def clear_history():
 
     return redirect("/history")
 # MAIN
-import os
-
 if __name__ == "__main__":
     init_db()
     port = int(os.environ.get("PORT", 5000))

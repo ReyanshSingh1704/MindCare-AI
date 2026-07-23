@@ -3,6 +3,7 @@ const messageInput = document.getElementById("message");
 const sendBtn = document.getElementById("sendBtn");
 
 // -------------------------
+
 // Add Message
 // -------------------------
 
@@ -67,12 +68,9 @@ function removeTyping() {
     const typing = document.getElementById("typing");
 
     if (typing) typing.remove();
-
 }
-
 // -------------------------
 // Send Message
-// -------------------------
 
 async function sendMessage() {
 

@@ -93,7 +93,6 @@ Delete
 <a href="/clear">
 
 <button class="delete-btn">
-
 🗑 Clear History
 
 </button>
@@ -111,29 +110,16 @@ let input=document.getElementById("searchInput");
 let filter=input.value.toLowerCase();
 
 let cards=document.getElementsByClassName("history-card");
-
 for(let i=0;i<cards.length;i++){
-
 let txt=cards[i].innerText.toLowerCase();
-
 if(txt.indexOf(filter)>-1){
-
 cards[i].style.display="block";
-
 }
-
 else{
-
 cards[i].style.display="none";
-
 }
-
 }
-
 }
-
 </script>
-
 </body>
-
 </html>

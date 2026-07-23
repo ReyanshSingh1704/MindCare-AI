@@ -71,7 +71,7 @@
 
         </h2>
 
-        <form action="/submit_feedback" method="POST">
+        <form action="/feedback" method="POST">
 
             <div class="mb-3">
 
@@ -149,8 +149,49 @@
 
     </div>
 
+<div class="container mt-5">
+
+    <h2 class="mb-4 text-center">
+        💬 Community Feedback
+    </h2>
+{% if feedbacks %}
+
+    {% for fb in feedbacks %}
+
+    <div class="card mb-3 shadow-sm">
+
+    <div class="card-body">
+
+        <h5 class="card-title">
+            👤 {{ fb[0] }}
+        </h5>
+
+        <p class="text-warning mb-2">
+            {{ fb[1] }}
+        </p>
+
+        <p class="card-text">
+            {{ fb[2] }}
+        </p>
+
+        <small class="text-muted">
+            {{ fb[3] }}
+        </small>
+
+    </div>
+
 </div>
 
+    <br>
+
+    {% endfor %}
+
+{% else %}
+
+<p>No feedbacks yet.</p>
+
+{% endif %}
+    </div>
 </body>
 
 </html>
